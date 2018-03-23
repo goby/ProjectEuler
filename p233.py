@@ -34,7 +34,7 @@
 # So found out follow solution with B = 2, 4, 6 = 14, 6 = 20, 4 = 2, 34
 # And the N should in form with sqrt(B) = 1, 2, 3 = 7, 3 = 10, 2 = 1, 17
 # 
-# Smallest qn is 5, and log5(10^11) < 16, so we remove last condition.
+# Smallest qn is 5, and log5(10^11) < 16, so we remove (1, 17)
 #
 # qn = [5, 13, 17, 29, 37, 41, ...]
 # 
@@ -47,13 +47,17 @@
 #
 
 import math
+import logging
+
+logging.BASIC_FORMAT='[%(asctime)s] %(levelname)s %(message)s'
 
 pn = [3,  7, 11]
 qn = [5, 13, 17]
 
+# load all need primes into pn and qn
 def load_prime(n):
     i = 19
-    while i < n:
+    while i <= n:
         flag = False
         root = i**0.5
         for k in pn:
@@ -72,76 +76,104 @@ def load_prime(n):
             else:
                 qn.append(i)
         i += 2
-    print pn[-1], qn[-1]
+    logging.error("%s, %s" % (pn[-1], qn[-1]))
 
+# 1) 1,2,3, we only concern all prime in qn and with 1 2 3 <- core
 def problem1():
-    upper = [
+    upbound = [
              ((10**11)/2/(5**3)/(13**2)),
              ((10**11)/2/(5**3)/(13))**(0.5),
              ((10**11)/2/(5**2)/(13))**(1.0/3)
             ]
     result = []
     for a in qn:
-        if a > upper[0]: break
+        if a > upbound[0]: break
         for b in qn:
-            if a == b or b > upper[1]: break
+            if a == b: continue
+            if b > upbound[1]: break
             for c in qn:
-                if c == a or c == b or c > upper[2]: break
+                if c == a or c == b: continue
+                if c > upbound[2]: break
                 rt = a * (b**2) * (c**3)
-                if 2*rt > (10**11):
-                    break
+                if 2*rt > (10**11): break
                 result.append(rt)
-    print len(result)
+    logging.error(len(result))
     return result
 
 # 2) 3, 7, log37(10^11/2) < 7, so the second largest is 29, and (10**11/(5**7)/2)**0.333 < 87, the first most is smaller than 87
 def problem2():
-    upper = [
+    upbound = [
              ((10**11)/2/(5**7))**(1.0/3),
              ((10**11)/2/(5**3))**(1.0/7),
             ]
     result = []
     for a in qn:
-        if a > upper[0]: break
+        if a > upbound[0]: break
         for b in qn:
-            if a == b or b > upper[1]: break
+            if a == b: continue 
+            if b > upbound[1]: break
             rt = (a**3) * (b**7)
-            if 2*rt > (10**11):
-                break
-            print a, b
+            if 2*rt > (10**11): break
             result.append(rt)
 
-    print len(result)
+    logging.error(len(result))
     return result
 
 # 3) 2, 10, log13(10^11/2) < 10, so the second is only [5], and (10^11/2/(5^10))^0.5 < 72, the first most is smaller than 72
 def problem3():
-    upper = [
+    upbound = [
              ((10**11)/2/(5**10))**(1.0/2),
              ((10**11)/2/(5**2))**(1.0/10),
             ]
     result = []
     for a in qn:
-        if a > upper[0]: break
+        if a > upbound[0]: break
         for b in qn:
-            if a == b or b > upper[1]: break
+            if a == b: continue
+            if b > upbound[1]: break
             rt = (a**2) * (b**10)
-            if 2*rt > (10**11):
-                break
-            print a, b
+            if 2*rt > (10**11): break
             result.append(rt)
 
-    print len(result)
+    logging.error(len(result))
+    return result
+
+# 
+def bfs(n, p0, his = []):
+    result = 0
+    value = p0 
+    while value <= n:
+        result += value
+        for pi in pn:
+            # fatal, the pi should not exist pre
+            if not his[pi]:
+                if pi * value > n: break
+                his[pi] = True
+                result += value * bfs(n/value, pi, his)
+                his[pi] = False
+        value *= p0 # increased by exponent
     return result
 
 def main():
-    max_n = 2366864
+    max_n = (10**11)/2/(5**3)/(13**2)
+    logging.error("max prime is less than %s" % max_n)
+
+    logging.error("loading prime")
     load_prime(max_n)
-    print "loaded prime"
-    problem1()
-    problem2()
-    problem3()
-    return
+    logging.error("loaded prime")
+
+    logging.error("solving problem")
+    bs = problem1() + problem2() + problem3()
+    logging.error("solved problem")
+
+    his = [False for _ in range(max_n+1)]
+
+    result = 0
+    for b in bs:
+        last = 10**11/b
+        result += bfs(last, 2, his) * b
+
+    logging.error(result)
 
 if __name__ == '__main__':
     main()
